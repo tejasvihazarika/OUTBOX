@@ -1,0 +1,71 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum EmailStatus {
+  SCHEDULED
+  SENT
+  FAILED
+  RESCHEDULED
+}
+
+model EmailJob {
+  id           String      @id @default(uuid())
+  sender       String
+  recipient    String
+  subject      String
+  body         String      @db.Text
+  scheduledTime DateTime   @map("scheduled_time")
+  status       EmailStatus @default(SCHEDULED)
+  bullmqJobId  String?     @map("bullmq_job_id")
+  sentAt       DateTime?   @map("sent_at")
+  errorMessage String?     @db.Text @map("error_message")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@map("email_jobs")
+  @@index([sender])
+  @@index([status])
+  @@index([scheduledTime])
+}
+
+model SenderAccount {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  smtpHost  String   @map("smtp_host")
+  smtpPort  Int      @map("smtp_port")
+  smtpUser  String   @map("smtp_user")
+  smtpPass  String   @map("smtp_pass")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("sender_accounts")
+}
+
+model SlackIntegration {
+  id             String   @id @default(uuid())
+  tenantId       String   @default("default") @map("tenant_id")
+  senderEmail    String?  @map("sender_email")
+  botAccessToken String?  @map("bot_access_token")
+  webhookUrl     String   @map("webhook_url")
+  channelId      String?  @map("channel_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("slack_integrations")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  googleId  String   @unique @map("google_id")
+  email     String   @unique
+  name      String
+  picture   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
